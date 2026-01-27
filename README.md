@@ -4,6 +4,14 @@ A web application for comparing outputs from multiple AI models side by side. Te
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/TrentPierce/ai-model-comparison)
 
+**Live Demo**: https://ai-model-comparison-six.vercel.app/
+
+## Preview
+
+![AI Model Comparison Tool Interface](screenshot.png)
+
+The interface provides a clean, intuitive layout for comparing AI model outputs. Configure up to 4 different models, enter your prompt once, and see all responses side by side with real-time status indicators and response times.
+
 ## Features
 
 - Side-by-side comparison of up to 4 AI models
@@ -285,6 +293,7 @@ ai-model-comparison/
 ├── index.html       # Main HTML structure
 ├── style.css        # Styling and responsive design
 ├── script.js        # Application logic and API integrations
+├── screenshot.png   # Interface preview
 └── README.md        # This file
 ```
 
