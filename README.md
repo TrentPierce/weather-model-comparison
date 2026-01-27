@@ -6,12 +6,6 @@ A web application for comparing outputs from multiple AI models side by side. Te
 
 **Live Demo**: https://ai-model-comparison-six.vercel.app/
 
-## Preview
-
-![AI Model Comparison Tool Interface](screenshot.png)
-
-The interface provides a clean, intuitive layout for comparing AI model outputs. Configure up to 4 different models, enter your prompt once, and see all responses side by side with real-time status indicators and response times.
-
 ## Features
 
 - Side-by-side comparison of up to 4 AI models
@@ -38,9 +32,9 @@ No build process, environment variables, or server configuration needed. Just de
 
 ## Supported AI Models
 
-### 1. OpenAI (GPT-4 & DALL-E)
+### 1. OpenAI (GPT-5.2 & DALL-E)
 
-**Text Generation**: GPT-4 for high-quality text responses
+**Text Generation**: GPT-5.2 for high-quality text responses
 **Image Generation**: DALL-E 3 for creating images from text prompts
 
 **Features**:
@@ -51,9 +45,9 @@ No build process, environment variables, or server configuration needed. Just de
 
 **API Documentation**: https://platform.openai.com/docs/api-reference
 
-### 2. Anthropic Claude
+### 2. Anthropic Claude Opus 4
 
-**Latest Model**: Claude 3.5 Sonnet
+**Latest Model**: Claude Opus 4
 
 **Features**:
 - Extended context window for long documents
@@ -63,9 +57,9 @@ No build process, environment variables, or server configuration needed. Just de
 
 **API Documentation**: https://docs.anthropic.com/claude/reference
 
-### 3. Google Gemini
+### 3. Google Gemini 3 Pro
 
-**Latest Model**: Gemini 1.5 Pro
+**Latest Model**: Gemini 3 Pro
 
 **Features**:
 - Multimodal understanding (text, images, video)
@@ -86,6 +80,20 @@ No build process, environment variables, or server configuration needed. Just de
 - Returns base64 encoded images
 
 **API Documentation**: https://platform.stability.ai/docs/api-reference
+
+### Additional Supported Models
+
+**Kimi k2.5 (Moonshot AI)**:
+- Extended context windows up to 200K tokens
+- Strong multilingual capabilities, especially for Chinese
+- Excellent for document analysis and long-form content
+- API Documentation: https://platform.moonshot.cn/docs
+
+**GLM 4.7 (BAAI - Beijing Academy of AI)**:
+- Open-source model with strong performance
+- Bilingual (English and Chinese) capabilities
+- Cost-effective alternative to commercial models
+- API Documentation: https://open.bigmodel.cn/dev/api
 
 ## Setup Instructions
 
@@ -129,7 +137,7 @@ Deploy to any static hosting service:
 5. Copy the key immediately (you won't be able to see it again)
 6. Add billing information at https://platform.openai.com/account/billing
 
-**Pricing**: Pay-as-you-go, approximately $0.03 per 1K tokens for GPT-4
+**Pricing**: Pay-as-you-go, pricing varies by model (GPT-5.2 rates available on pricing page)
 
 ### Anthropic API Key
 
@@ -163,12 +171,32 @@ Deploy to any static hosting service:
 
 **Pricing**: Credit-based system, check https://platform.stability.ai/pricing
 
+### Moonshot AI API Key (Kimi k2.5)
+
+1. Visit https://platform.moonshot.cn/
+2. Register for an account
+3. Navigate to API settings
+4. Generate a new API key
+5. Add credits or payment method for usage
+
+**Pricing**: Competitive pricing for extended context windows
+
+### BAAI API Key (GLM 4.7)
+
+1. Visit https://open.bigmodel.cn/
+2. Register for an account
+3. Go to API credentials section
+4. Create a new API key
+5. Note any free tier quotas available
+
+**Pricing**: Free tier available, with paid options for higher usage
+
 ## Configuring API Keys
 
 1. Open the application in your browser
 2. Click the "Show/Hide API Keys" button to reveal the configuration panel
 3. Enter your API keys for each model you want to use
-4. Set custom display names for each model (e.g., "GPT-4", "Claude Sonnet", "Gemini Pro", "Stable Diffusion")
+4. Set custom display names for each model (e.g., "GPT-5.2", "Claude Opus 4", "Gemini 3 Pro", "Kimi k2.5")
 5. Click "Save Configuration" to store settings locally
 
 ### Security Notes
@@ -262,6 +290,18 @@ Prompt: "How would you debug a memory leak in a Node.js application?"
 See different troubleshooting approaches
 ```
 
+**Long Document Analysis** (with Kimi k2.5):
+```
+Prompt: "Summarize this 50-page research paper: [paste content]"
+Leverage extended context windows for comprehensive document processing
+```
+
+**Multilingual Tasks** (with GLM 4.7 or Kimi):
+```
+Prompt: "Translate and explain this technical document from English to Chinese"
+Compare multilingual capabilities across models
+```
+
 ## Response Display
 
 Each panel shows:
@@ -283,6 +323,8 @@ Be aware of rate limits for each API:
 - **Anthropic**: Based on your plan
 - **Google Gemini**: 60 requests per minute (free tier)
 - **Stability AI**: Based on credits and plan
+- **Moonshot AI**: Based on subscription level
+- **BAAI**: Free tier available with rate limits
 
 The application will display helpful error messages if you hit rate limits.
 
@@ -293,7 +335,6 @@ ai-model-comparison/
 ├── index.html       # Main HTML structure
 ├── style.css        # Styling and responsive design
 ├── script.js        # Application logic and API integrations
-├── screenshot.png   # Interface preview
 └── README.md        # This file
 ```
 
@@ -347,7 +388,7 @@ Contributions are welcome. To contribute:
 
 Focus areas for contribution:
 
-- Additional AI model integrations (Mistral, Cohere, etc.)
+- Additional AI model integrations (Mistral, Cohere, DeepSeek, etc.)
 - Enhanced UI/UX features
 - Export/comparison tools
 - Performance optimizations
@@ -360,11 +401,13 @@ MIT License - feel free to use this project for any purpose.
 
 ## Roadmap
 
-- [x] OpenAI GPT-4 integration
-- [x] Anthropic Claude integration
-- [x] Google Gemini integration
+- [x] OpenAI GPT-5.2 integration
+- [x] Anthropic Claude Opus 4 integration
+- [x] Google Gemini 3 Pro integration
 - [x] Stability AI integration
 - [x] DALL-E image generation
+- [x] Kimi k2.5 (Moonshot AI) support
+- [x] GLM 4.7 (BAAI) support
 - [ ] Conversation history and session management
 - [ ] Export comparison results (JSON, PDF, Markdown)
 - [ ] Advanced comparison metrics and analytics
@@ -397,9 +440,11 @@ For issues or questions:
 ## Acknowledgments
 
 Built with integrations for:
-- OpenAI GPT-4 and DALL-E
-- Anthropic Claude
-- Google Gemini
+- OpenAI GPT-5.2 and DALL-E
+- Anthropic Claude Opus 4
+- Google Gemini 3 Pro
 - Stability AI
+- Kimi k2.5 (Moonshot AI)
+- GLM 4.7 (BAAI)
 
 Thank you to all AI providers for their excellent APIs and documentation.
