@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Model Comparison Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Model Comparison Tool</h1>
+            <p class="subtitle">Compare outputs from multiple AI models side by side</p>
+        </header>
+
+        <section class="config-section">
+            <h2>API Configuration</h2>
+            <button id="toggleConfig" class="btn-secondary">Show/Hide API Keys</button>
+            <div id="apiConfig" class="api-config hidden">
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label for="apiKey1">Model 1 API Key:</label>
+                        <input type="password" id="apiKey1" placeholder="Enter API key for Model 1">
+                        <label for="model1Name">Model 1 Name:</label>
+                        <input type="text" id="model1Name" placeholder="e.g., GPT-4">
+                    </div>
+                    <div class="config-item">
+                        <label for="apiKey2">Model 2 API Key:</label>
+                        <input type="password" id="apiKey2" placeholder="Enter API key for Model 2">
+                        <label for="model2Name">Model 2 Name:</label>
+                        <input type="text" id="model2Name" placeholder="e.g., Claude">
+                    </div>
+                    <div class="config-item">
+                        <label for="apiKey3">Model 3 API Key:</label>
+                        <input type="password" id="apiKey3" placeholder="Enter API key for Model 3">
+                        <label for="model3Name">Model 3 Name:</label>
+                        <input type="text" id="model3Name" placeholder="e.g., Gemini">
+                    </div>
+                    <div class="config-item">
+                        <label for="apiKey4">Model 4 API Key:</label>
+                        <input type="password" id="apiKey4" placeholder="Enter API key for Model 4">
+                        <label for="model4Name">Model 4 Name:</label>
+                        <input type="text" id="model4Name" placeholder="e.g., Llama">
+                    </div>
+                </div>
+                <button id="saveConfig" class="btn-primary">Save Configuration</button>
+            </div>
+        </section>
+
+        <section class="prompt-section">
+            <h2>Enter Your Prompt</h2>
+            <textarea id="promptInput" placeholder="Enter your prompt here..." rows="6"></textarea>
+            <button id="submitBtn" class="btn-primary btn-large">Compare Models</button>
+        </section>
+
+        <section class="results-section">
+            <h2>Results</h2>
+            <div class="results-grid">
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <h3 id="model1Title">Model 1</h3>
+                        <span class="status" id="status1"></span>
+                    </div>
+                    <div class="panel-content" id="result1">
+                        <p class="placeholder">Results will appear here...</p>
+                    </div>
+                </div>
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <h3 id="model2Title">Model 2</h3>
+                        <span class="status" id="status2"></span>
+                    </div>
+                    <div class="panel-content" id="result2">
+                        <p class="placeholder">Results will appear here...</p>
+                    </div>
+                </div>
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <h3 id="model3Title">Model 3</h3>
+                        <span class="status" id="status3"></span>
+                    </div>
+                    <div class="panel-content" id="result3">
+                        <p class="placeholder">Results will appear here...</p>
+                    </div>
+                </div>
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <h3 id="model4Title">Model 4</h3>
+                        <span class="status" id="status4"></span>
+                    </div>
+                    <div class="panel-content" id="result4">
+                        <p class="placeholder">Results will appear here...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
