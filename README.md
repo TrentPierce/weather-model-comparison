@@ -2,6 +2,8 @@
 
 A web application for comparing outputs from multiple AI models side by side. Test the same prompt across different AI models simultaneously and compare their responses in real-time.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/TrentPierce/ai-model-comparison)
+
 ## Features
 
 - Side-by-side comparison of up to 4 AI models
@@ -12,6 +14,19 @@ A web application for comparing outputs from multiple AI models side by side. Te
 - Parallel API calls for faster results
 - Automatic content type detection
 - Built-in error handling with helpful hints
+
+## Quick Deploy
+
+This is a static site with no backend requirements. Deploy instantly to your preferred hosting platform:
+
+- **Vercel**: Click the "Deploy with Vercel" button above for one-click deployment
+- **Netlify**: Drag and drop the repository folder to https://app.netlify.com/drop
+- **GitHub Pages**: Enable in repository Settings → Pages → Select branch
+- **Cloudflare Pages**: Connect your repository at https://pages.cloudflare.com
+- **AWS S3**: Upload files to an S3 bucket with static website hosting enabled
+- **Azure Static Web Apps**: Deploy directly from your GitHub repository
+
+No build process, environment variables, or server configuration needed. Just deploy and add your API keys in the browser.
 
 ## Supported AI Models
 
