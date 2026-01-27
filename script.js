@@ -54,6 +54,38 @@ class ConfigManager {
     }
 }
 
+// Content Type Detector
+class ContentTypeDetector {
+    static detectContentType(prompt) {
+        const lowerPrompt = prompt.toLowerCase();
+        
+        // Image generation keywords
+        const imageKeywords = [
+            'image', 'picture', 'photo', 'generate', 'create', 'draw',
+            'painting', 'illustration', 'artwork', 'visual', 'render'
+        ];
+        
+        // SVG keywords
+        const svgKeywords = [
+            'svg', 'vector', 'icon', 'logo', 'diagram', 'chart', 'graph'
+        ];
+        
+        // Check for image request
+        if (imageKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
+            (lowerPrompt.includes('of') || lowerPrompt.includes('showing'))) {
+            return 'image';
+        }
+        
+        // Check for SVG request
+        if (svgKeywords.some(keyword => lowerPrompt.includes(keyword))) {
+            return 'svg';
+        }
+        
+        // Default to text
+        return 'text';
+    }
+}
+
 // AI Model API Caller
 class AIModelCaller {
     constructor(modelNumber, apiKey, modelName) {
@@ -74,49 +106,236 @@ class AIModelCaller {
         const startTime = Date.now();
 
         try {
-            // Placeholder for actual API implementation
-            // This is where you would integrate specific AI model APIs
-            const result = await this.mockAPICall(prompt);
-            const responseTime = Date.now() - startTime;
+            let result;
+            const contentType = ContentTypeDetector.detectContentType(prompt);
             
+            // Route to appropriate API based on model name
+            const modelLower = this.modelName.toLowerCase();
+            
+            if (modelLower.includes('gpt') || modelLower.includes('openai')) {
+                if (contentType === 'image') {
+                    result = await this.callDALLE(prompt);
+                } else {
+                    result = await this.callOpenAI(prompt);
+                }
+            } else if (modelLower.includes('claude') || modelLower.includes('anthropic')) {
+                result = await this.callAnthropic(prompt);
+            } else if (modelLower.includes('gemini') || modelLower.includes('google')) {
+                result = await this.callGoogle(prompt);
+            } else if (modelLower.includes('stability') || modelLower.includes('stable')) {
+                result = await this.callStabilityAI(prompt);
+            } else {
+                // Try to detect based on API key format or default to OpenAI
+                result = await this.callOpenAI(prompt);
+            }
+            
+            const responseTime = Date.now() - startTime;
             this.displayResult(result, responseTime);
             this.setStatus('success', 'Complete');
         } catch (error) {
+            console.error(`Error in ${this.modelName}:`, error);
             this.displayError(error.message);
             this.setStatus('error', 'Error');
         }
     }
 
-    async mockAPICall(prompt) {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-        
-        // Mock response
+    async callOpenAI(prompt) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-4',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a helpful assistant. Provide clear, accurate, and concise responses.'
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `OpenAI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
         return {
             type: 'text',
-            content: `Mock response from ${this.modelName}\n\nThis is a placeholder response. To integrate real AI models, implement the API calls in the callModel() method.\n\nPrompt received: "${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}"`
+            content: data.choices[0].message.content
         };
     }
 
-    // Placeholder methods for different AI APIs
-    async callOpenAI(prompt) {
-        // Implementation for OpenAI API
-        throw new Error('OpenAI API integration not yet implemented');
+    async callDALLE(prompt) {
+        const response = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'dall-e-3',
+                prompt: prompt,
+                n: 1,
+                size: '1024x1024',
+                quality: 'standard'
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `DALL-E API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return {
+            type: 'image',
+            content: data.data[0].url,
+            revised_prompt: data.data[0].revised_prompt
+        };
     }
 
     async callAnthropic(prompt) {
-        // Implementation for Anthropic Claude API
-        throw new Error('Anthropic API integration not yet implemented');
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': this.apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-3-5-sonnet-20241022',
+                max_tokens: 2000,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `Anthropic API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Handle different content types from Claude
+        let content = '';
+        for (const block of data.content) {
+            if (block.type === 'text') {
+                content += block.text;
+            }
+        }
+        
+        return {
+            type: 'text',
+            content: content
+        };
     }
 
     async callGoogle(prompt) {
-        // Implementation for Google Gemini API
-        throw new Error('Google API integration not yet implemented');
+        // Gemini API uses a different URL structure with API key in the URL
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${this.apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: prompt
+                            }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 2000,
+                    topP: 0.95
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || `Google API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error('No response from Gemini');
+        }
+        
+        const candidate = data.candidates[0];
+        if (candidate.finishReason === 'SAFETY') {
+            throw new Error('Response blocked by safety filters');
+        }
+        
+        const content = candidate.content.parts[0].text;
+        
+        return {
+            type: 'text',
+            content: content
+        };
     }
 
-    async callCustomModel(prompt) {
-        // Implementation for custom model API
-        throw new Error('Custom model API integration not yet implemented');
+    async callStabilityAI(prompt) {
+        const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKey}`,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                text_prompts: [
+                    {
+                        text: prompt,
+                        weight: 1
+                    }
+                ],
+                cfg_scale: 7,
+                height: 1024,
+                width: 1024,
+                samples: 1,
+                steps: 30
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || `Stability AI error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.artifacts || data.artifacts.length === 0) {
+            throw new Error('No image generated');
+        }
+        
+        // Convert base64 to data URL
+        const base64Image = data.artifacts[0].base64;
+        const dataUrl = `data:image/png;base64,${base64Image}`;
+        
+        return {
+            type: 'image',
+            content: dataUrl
+        };
     }
 
     displayResult(result, responseTime) {
@@ -132,7 +351,20 @@ class AIModelCaller {
             const img = document.createElement('img');
             img.src = result.content;
             img.alt = 'AI Generated Image';
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.borderRadius = '4px';
             this.resultElement.appendChild(img);
+            
+            // Add revised prompt if available (DALL-E)
+            if (result.revised_prompt) {
+                const promptDiv = document.createElement('div');
+                promptDiv.style.marginTop = '10px';
+                promptDiv.style.fontSize = '0.9rem';
+                promptDiv.style.color = '#666';
+                promptDiv.innerHTML = `<strong>Revised prompt:</strong> ${result.revised_prompt}`;
+                this.resultElement.appendChild(promptDiv);
+            }
         } else if (result.type === 'svg') {
             const svgContainer = document.createElement('div');
             svgContainer.innerHTML = result.content;
@@ -150,6 +382,17 @@ class AIModelCaller {
 
     displayError(message) {
         this.resultElement.innerHTML = `<p class="error">Error: ${message}</p>`;
+        
+        // Add helpful hints for common errors
+        if (message.includes('401') || message.includes('authentication') || message.includes('api key')) {
+            this.resultElement.innerHTML += '<p class="error">Hint: Check that your API key is correct and active.</p>';
+        } else if (message.includes('429') || message.includes('rate limit')) {
+            this.resultElement.innerHTML += '<p class="error">Hint: You have exceeded the rate limit. Wait a moment and try again.</p>';
+        } else if (message.includes('quota') || message.includes('billing')) {
+            this.resultElement.innerHTML += '<p class="error">Hint: Check your API account billing and quota limits.</p>';
+        } else if (message.includes('safety') || message.includes('blocked')) {
+            this.resultElement.innerHTML += '<p class="error">Hint: Your prompt may have been blocked by content filters. Try rephrasing.</p>';
+        }
     }
 
     setStatus(type, text) {
