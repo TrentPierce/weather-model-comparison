@@ -97,6 +97,39 @@ section h2 {
     cursor: not-allowed;
 }
 
+.btn-secondary,
+.btn-danger {
+    border: none;
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background: #486581;
+}
+
+.btn-secondary:hover {
+    background: #334e68;
+}
+
+.btn-danger {
+    background: #c53030;
+}
+
+.btn-danger:hover {
+    background: #9b2c2c;
+}
+
+.leaderboard-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
 .run-status {
     margin-top: 12px;
     color: #334e68;
@@ -115,6 +148,20 @@ section h2 {
 .placeholder {
     color: #829ab1;
     font-style: italic;
+}
+
+.summary-box {
+    border: 1px solid #d9e2ec;
+    background: #f7fbff;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    color: #102a43;
+}
+
+.summary-box .meta {
+    display: block;
+    margin-top: 4px;
 }
 
 table {

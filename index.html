@@ -31,10 +31,24 @@
         </section>
 
         <section class="results-section">
-            <h2>Model Ranking</h2>
+            <h2>This Run: Severe Weather Accuracy</h2>
             <div id="rankingWrap" class="ranking-wrap">
                 <p class="placeholder">Run a benchmark to see ranked model accuracy.</p>
             </div>
+        </section>
+
+        <section class="results-section">
+            <h2>Persistent Leaderboard</h2>
+            <div id="leaderboardWrap" class="ranking-wrap">
+                <p class="placeholder">Run benchmarks to build your leaderboard.</p>
+            </div>
+            <div class="leaderboard-actions">
+                <button id="exportLeaderboardBtn" class="btn-secondary">Export Leaderboard</button>
+                <button id="importLeaderboardBtn" class="btn-secondary">Import Leaderboard</button>
+                <button id="clearLeaderboardBtn" class="btn-danger">Clear Leaderboard</button>
+                <input type="file" id="importLeaderboardFile" accept="application/json" hidden>
+            </div>
+            <p class="meta">Saved in your browser storage. Use export/import to move it between devices.</p>
         </section>
 
         <section class="results-section">
