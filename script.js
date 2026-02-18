@@ -1,472 +1,375 @@
-// Configuration Management
-class ConfigManager {
+const CANDIDATE_LOCATIONS = [
+    { name: "New York, US", lat: 40.7128, lon: -74.0060 },
+    { name: "Los Angeles, US", lat: 34.0522, lon: -118.2437 },
+    { name: "Chicago, US", lat: 41.8781, lon: -87.6298 },
+    { name: "Houston, US", lat: 29.7604, lon: -95.3698 },
+    { name: "Phoenix, US", lat: 33.4484, lon: -112.0740 },
+    { name: "Seattle, US", lat: 47.6062, lon: -122.3321 },
+    { name: "Miami, US", lat: 25.7617, lon: -80.1918 },
+    { name: "Denver, US", lat: 39.7392, lon: -104.9903 },
+    { name: "Boston, US", lat: 42.3601, lon: -71.0589 },
+    { name: "London, UK", lat: 51.5074, lon: -0.1278 },
+    { name: "Paris, FR", lat: 48.8566, lon: 2.3522 },
+    { name: "Berlin, DE", lat: 52.52, lon: 13.4050 },
+    { name: "Madrid, ES", lat: 40.4168, lon: -3.7038 },
+    { name: "Tokyo, JP", lat: 35.6762, lon: 139.6503 },
+    { name: "Seoul, KR", lat: 37.5665, lon: 126.9780 },
+    { name: "Sydney, AU", lat: -33.8688, lon: 151.2093 },
+    { name: "Sao Paulo, BR", lat: -23.5505, lon: -46.6333 },
+    { name: "Cape Town, ZA", lat: -33.9249, lon: 18.4241 },
+    { name: "Nairobi, KE", lat: -1.2921, lon: 36.8219 },
+    { name: "Toronto, CA", lat: 43.6532, lon: -79.3832 }
+];
+
+const MODEL_CANDIDATES = [
+    { id: "ecmwf_ifs025", label: "ECMWF IFS 0.25" },
+    { id: "gfs_seamless", label: "GFS Seamless" },
+    { id: "icon_seamless", label: "ICON Seamless" },
+    { id: "gem_seamless", label: "GEM Seamless" },
+    { id: "meteofrance_seamless", label: "Meteo-France Seamless" },
+    { id: "jma_seamless", label: "JMA Seamless" },
+    { id: "ukmo_seamless", label: "UKMO Seamless" },
+    { id: "ecmwf_aifs025", label: "ECMWF AIFS 0.25" }
+];
+
+const WEATHER_VARS = ["temperature_2m", "relative_humidity_2m", "wind_speed_10m"];
+
+function pickRandomLocations(count) {
+    const shuffled = [...CANDIDATE_LOCATIONS].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, CANDIDATE_LOCATIONS.length));
+}
+
+function formatNum(value, decimals = 2) {
+    if (!Number.isFinite(value)) return "-";
+    return value.toFixed(decimals);
+}
+
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+class ForecastComparator {
     constructor() {
-        this.storageKey = 'aiModelConfig';
-        this.loadConfig();
+        this.runBtn = document.getElementById("runBtn");
+        this.locationCountInput = document.getElementById("locationCount");
+        this.modelCountInput = document.getElementById("modelCount");
+        this.runStatus = document.getElementById("runStatus");
+        this.rankingWrap = document.getElementById("rankingWrap");
+        this.detailsWrap = document.getElementById("detailsWrap");
+        this.runBtn.addEventListener("click", () => this.runBenchmark());
     }
 
-    loadConfig() {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-            const config = JSON.parse(saved);
-            // Populate form fields
-            document.getElementById('apiKey1').value = config.apiKey1 || '';
-            document.getElementById('apiKey2').value = config.apiKey2 || '';
-            document.getElementById('apiKey3').value = config.apiKey3 || '';
-            document.getElementById('apiKey4').value = config.apiKey4 || '';
-            document.getElementById('model1Name').value = config.model1Name || 'Model 1';
-            document.getElementById('model2Name').value = config.model2Name || 'Model 2';
-            document.getElementById('model3Name').value = config.model3Name || 'Model 3';
-            document.getElementById('model4Name').value = config.model4Name || 'Model 4';
-            
-            // Update panel titles
-            this.updatePanelTitles(config);
-        }
+    setStatus(text) {
+        this.runStatus.textContent = text;
     }
 
-    saveConfig() {
-        const config = {
-            apiKey1: document.getElementById('apiKey1').value,
-            apiKey2: document.getElementById('apiKey2').value,
-            apiKey3: document.getElementById('apiKey3').value,
-            apiKey4: document.getElementById('apiKey4').value,
-            model1Name: document.getElementById('model1Name').value || 'Model 1',
-            model2Name: document.getElementById('model2Name').value || 'Model 2',
-            model3Name: document.getElementById('model3Name').value || 'Model 3',
-            model4Name: document.getElementById('model4Name').value || 'Model 4'
-        };
-        
-        localStorage.setItem(this.storageKey, JSON.stringify(config));
-        this.updatePanelTitles(config);
-        return config;
-    }
+    async runBenchmark() {
+        const locationCount = clamp(parseInt(this.locationCountInput.value, 10) || 8, 3, 20);
+        const requestedModelCount = clamp(parseInt(this.modelCountInput.value, 10) || 5, 2, 8);
 
-    updatePanelTitles(config) {
-        document.getElementById('model1Title').textContent = config.model1Name || 'Model 1';
-        document.getElementById('model2Title').textContent = config.model2Name || 'Model 2';
-        document.getElementById('model3Title').textContent = config.model3Name || 'Model 3';
-        document.getElementById('model4Title').textContent = config.model4Name || 'Model 4';
-    }
+        this.locationCountInput.value = locationCount;
+        this.modelCountInput.value = requestedModelCount;
 
-    getConfig() {
-        const saved = localStorage.getItem(this.storageKey);
-        return saved ? JSON.parse(saved) : {};
-    }
-}
-
-// Content Type Detector
-class ContentTypeDetector {
-    static detectContentType(prompt) {
-        const lowerPrompt = prompt.toLowerCase();
-        
-        // Image generation keywords
-        const imageKeywords = [
-            'image', 'picture', 'photo', 'generate', 'create', 'draw',
-            'painting', 'illustration', 'artwork', 'visual', 'render'
-        ];
-        
-        // SVG keywords
-        const svgKeywords = [
-            'svg', 'vector', 'icon', 'logo', 'diagram', 'chart', 'graph'
-        ];
-        
-        // Check for image request
-        if (imageKeywords.some(keyword => lowerPrompt.includes(keyword)) &&
-            (lowerPrompt.includes('of') || lowerPrompt.includes('showing'))) {
-            return 'image';
-        }
-        
-        // Check for SVG request
-        if (svgKeywords.some(keyword => lowerPrompt.includes(keyword))) {
-            return 'svg';
-        }
-        
-        // Default to text
-        return 'text';
-    }
-}
-
-// AI Model API Caller
-class AIModelCaller {
-    constructor(modelNumber, apiKey, modelName) {
-        this.modelNumber = modelNumber;
-        this.apiKey = apiKey;
-        this.modelName = modelName;
-        this.resultElement = document.getElementById(`result${modelNumber}`);
-        this.statusElement = document.getElementById(`status${modelNumber}`);
-    }
-
-    async callModel(prompt) {
-        if (!this.apiKey) {
-            this.displayError('API key not configured');
-            return;
-        }
-
-        this.setStatus('loading', 'Loading...');
-        const startTime = Date.now();
+        this.runBtn.disabled = true;
+        this.setStatus("Selecting random locations and checking available models...");
+        this.rankingWrap.innerHTML = '<p class="placeholder">Running benchmark...</p>';
+        this.detailsWrap.innerHTML = '<p class="placeholder">Collecting location data...</p>';
 
         try {
-            let result;
-            const contentType = ContentTypeDetector.detectContentType(prompt);
-            
-            // Route to appropriate API based on model name
-            const modelLower = this.modelName.toLowerCase();
-            
-            if (modelLower.includes('gpt') || modelLower.includes('openai')) {
-                if (contentType === 'image') {
-                    result = await this.callDALLE(prompt);
-                } else {
-                    result = await this.callOpenAI(prompt);
-                }
-            } else if (modelLower.includes('claude') || modelLower.includes('anthropic')) {
-                result = await this.callAnthropic(prompt);
-            } else if (modelLower.includes('gemini') || modelLower.includes('google')) {
-                result = await this.callGoogle(prompt);
-            } else if (modelLower.includes('stability') || modelLower.includes('stable')) {
-                result = await this.callStabilityAI(prompt);
-            } else {
-                // Try to detect based on API key format or default to OpenAI
-                result = await this.callOpenAI(prompt);
+            const locations = pickRandomLocations(locationCount);
+            const availableModels = await this.detectAvailableModels(locations[0], requestedModelCount);
+
+            if (availableModels.length < 2) {
+                throw new Error("Not enough forecast models are currently available from the API.");
             }
-            
-            const responseTime = Date.now() - startTime;
-            this.displayResult(result, responseTime);
-            this.setStatus('success', 'Complete');
+
+            this.setStatus(`Using ${availableModels.length} models across ${locations.length} locations...`);
+
+            const locationResults = await Promise.all(
+                locations.map((location) => this.evaluateLocation(location, availableModels))
+            );
+
+            const successfulLocations = locationResults.filter((item) => !item.error);
+            if (successfulLocations.length === 0) {
+                throw new Error("No locations returned complete weather data.");
+            }
+
+            const ranking = this.rankModels(successfulLocations, availableModels);
+            this.renderRanking(ranking, successfulLocations.length);
+            this.renderDetails(successfulLocations, availableModels);
+
+            this.setStatus(
+                `Completed. Ranked ${ranking.length} models using ${successfulLocations.length} valid locations.`
+            );
         } catch (error) {
-            console.error(`Error in ${this.modelName}:`, error);
-            this.displayError(error.message);
-            this.setStatus('error', 'Error');
-        }
-    }
-
-    async callOpenAI(prompt) {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'gpt-4',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a helpful assistant. Provide clear, accurate, and concise responses.'
-                    },
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                temperature: 0.7,
-                max_tokens: 2000
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `OpenAI API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return {
-            type: 'text',
-            content: data.choices[0].message.content
-        };
-    }
-
-    async callDALLE(prompt) {
-        const response = await fetch('https://api.openai.com/v1/images/generations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'dall-e-3',
-                prompt: prompt,
-                n: 1,
-                size: '1024x1024',
-                quality: 'standard'
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `DALL-E API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return {
-            type: 'image',
-            content: data.data[0].url,
-            revised_prompt: data.data[0].revised_prompt
-        };
-    }
-
-    async callAnthropic(prompt) {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': this.apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-3-5-sonnet-20241022',
-                max_tokens: 2000,
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ]
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Anthropic API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Handle different content types from Claude
-        let content = '';
-        for (const block of data.content) {
-            if (block.type === 'text') {
-                content += block.text;
-            }
-        }
-        
-        return {
-            type: 'text',
-            content: content
-        };
-    }
-
-    async callGoogle(prompt) {
-        // Gemini API uses a different URL structure with API key in the URL
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${this.apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: prompt
-                            }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 2000,
-                    topP: 0.95
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || `Google API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error('No response from Gemini');
-        }
-        
-        const candidate = data.candidates[0];
-        if (candidate.finishReason === 'SAFETY') {
-            throw new Error('Response blocked by safety filters');
-        }
-        
-        const content = candidate.content.parts[0].text;
-        
-        return {
-            type: 'text',
-            content: content
-        };
-    }
-
-    async callStabilityAI(prompt) {
-        const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiKey}`,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                text_prompts: [
-                    {
-                        text: prompt,
-                        weight: 1
-                    }
-                ],
-                cfg_scale: 7,
-                height: 1024,
-                width: 1024,
-                samples: 1,
-                steps: 30
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || `Stability AI error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (!data.artifacts || data.artifacts.length === 0) {
-            throw new Error('No image generated');
-        }
-        
-        // Convert base64 to data URL
-        const base64Image = data.artifacts[0].base64;
-        const dataUrl = `data:image/png;base64,${base64Image}`;
-        
-        return {
-            type: 'image',
-            content: dataUrl
-        };
-    }
-
-    displayResult(result, responseTime) {
-        this.resultElement.innerHTML = '';
-
-        if (result.type === 'text') {
-            const textDiv = document.createElement('div');
-            const pre = document.createElement('pre');
-            pre.textContent = result.content;
-            textDiv.appendChild(pre);
-            this.resultElement.appendChild(textDiv);
-        } else if (result.type === 'image') {
-            const img = document.createElement('img');
-            img.src = result.content;
-            img.alt = 'AI Generated Image';
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
-            img.style.borderRadius = '4px';
-            this.resultElement.appendChild(img);
-            
-            // Add revised prompt if available (DALL-E)
-            if (result.revised_prompt) {
-                const promptDiv = document.createElement('div');
-                promptDiv.style.marginTop = '10px';
-                promptDiv.style.fontSize = '0.9rem';
-                promptDiv.style.color = '#666';
-                promptDiv.innerHTML = `<strong>Revised prompt:</strong> ${result.revised_prompt}`;
-                this.resultElement.appendChild(promptDiv);
-            }
-        } else if (result.type === 'svg') {
-            const svgContainer = document.createElement('div');
-            svgContainer.innerHTML = result.content;
-            this.resultElement.appendChild(svgContainer);
-        }
-
-        // Add response time
-        if (responseTime) {
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'response-time';
-            timeDiv.textContent = `Response time: ${(responseTime / 1000).toFixed(2)}s`;
-            this.resultElement.appendChild(timeDiv);
-        }
-    }
-
-    displayError(message) {
-        this.resultElement.innerHTML = `<p class="error">Error: ${message}</p>`;
-        
-        // Add helpful hints for common errors
-        if (message.includes('401') || message.includes('authentication') || message.includes('api key')) {
-            this.resultElement.innerHTML += '<p class="error">Hint: Check that your API key is correct and active.</p>';
-        } else if (message.includes('429') || message.includes('rate limit')) {
-            this.resultElement.innerHTML += '<p class="error">Hint: You have exceeded the rate limit. Wait a moment and try again.</p>';
-        } else if (message.includes('quota') || message.includes('billing')) {
-            this.resultElement.innerHTML += '<p class="error">Hint: Check your API account billing and quota limits.</p>';
-        } else if (message.includes('safety') || message.includes('blocked')) {
-            this.resultElement.innerHTML += '<p class="error">Hint: Your prompt may have been blocked by content filters. Try rephrasing.</p>';
-        }
-    }
-
-    setStatus(type, text) {
-        this.statusElement.className = `status ${type}`;
-        this.statusElement.textContent = text;
-    }
-}
-
-// Main Application Controller
-class ComparisonApp {
-    constructor() {
-        this.configManager = new ConfigManager();
-        this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-        // Toggle API configuration visibility
-        document.getElementById('toggleConfig').addEventListener('click', () => {
-            document.getElementById('apiConfig').classList.toggle('hidden');
-        });
-
-        // Save configuration
-        document.getElementById('saveConfig').addEventListener('click', () => {
-            this.configManager.saveConfig();
-            alert('Configuration saved successfully!');
-        });
-
-        // Submit comparison
-        document.getElementById('submitBtn').addEventListener('click', () => {
-            this.compareModels();
-        });
-
-        // Allow Enter key with Ctrl/Cmd to submit
-        document.getElementById('promptInput').addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                this.compareModels();
-            }
-        });
-    }
-
-    async compareModels() {
-        const prompt = document.getElementById('promptInput').value.trim();
-        
-        if (!prompt) {
-            alert('Please enter a prompt');
-            return;
-        }
-
-        const config = this.configManager.getConfig();
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Comparing...';
-
-        // Create callers for each model
-        const callers = [
-            new AIModelCaller(1, config.apiKey1, config.model1Name),
-            new AIModelCaller(2, config.apiKey2, config.model2Name),
-            new AIModelCaller(3, config.apiKey3, config.model3Name),
-            new AIModelCaller(4, config.apiKey4, config.model4Name)
-        ];
-
-        // Call all models in parallel
-        try {
-            await Promise.all(callers.map(caller => caller.callModel(prompt)));
-        } catch (error) {
-            console.error('Error during comparison:', error);
+            console.error(error);
+            this.rankingWrap.innerHTML = `<p class="error-text">${error.message}</p>`;
+            this.detailsWrap.innerHTML = '<p class="placeholder">No details available for this run.</p>';
+            this.setStatus("Run failed. Check details and try again.");
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Compare Models';
+            this.runBtn.disabled = false;
         }
+    }
+
+    async detectAvailableModels(sampleLocation, requestedCount) {
+        const checks = MODEL_CANDIDATES.map(async (model) => {
+            try {
+                await this.fetchModelForecast(sampleLocation, model.id);
+                return model;
+            } catch {
+                return null;
+            }
+        });
+
+        const resolved = await Promise.all(checks);
+        return resolved.filter(Boolean).slice(0, requestedCount);
+    }
+
+    async evaluateLocation(location, models) {
+        try {
+            const observation = await this.fetchCurrentObservation(location);
+            const forecastRuns = await Promise.all(
+                models.map(async (model) => {
+                    try {
+                        const forecast = await this.fetchModelForecast(location, model.id);
+                        const score = this.calculateError(observation, forecast);
+                        return {
+                            modelId: model.id,
+                            modelLabel: model.label,
+                            forecast,
+                            score
+                        };
+                    } catch {
+                        return null;
+                    }
+                })
+            );
+
+            return {
+                location,
+                observation,
+                forecasts: forecastRuns.filter(Boolean)
+            };
+        } catch (error) {
+            return {
+                location,
+                error: error.message
+            };
+        }
+    }
+
+    async fetchCurrentObservation(location) {
+        const params = new URLSearchParams({
+            latitude: String(location.lat),
+            longitude: String(location.lon),
+            current: WEATHER_VARS.join(","),
+            timezone: "UTC"
+        });
+
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+        if (!response.ok) {
+            throw new Error(`Observation request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+        if (!data.current) {
+            throw new Error("Observation payload missing current values.");
+        }
+
+        return {
+            time: data.current.time,
+            temperature_2m: data.current.temperature_2m,
+            relative_humidity_2m: data.current.relative_humidity_2m,
+            wind_speed_10m: data.current.wind_speed_10m
+        };
+    }
+
+    async fetchModelForecast(location, modelId) {
+        const params = new URLSearchParams({
+            latitude: String(location.lat),
+            longitude: String(location.lon),
+            hourly: WEATHER_VARS.join(","),
+            forecast_days: "1",
+            models: modelId,
+            timezone: "UTC"
+        });
+
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+        if (!response.ok) {
+            throw new Error(`Forecast request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+        if (!data.hourly?.time?.length) {
+            throw new Error("Forecast payload missing hourly series.");
+        }
+
+        const index = 0;
+        return {
+            model: modelId,
+            time: data.hourly.time[index],
+            temperature_2m: data.hourly.temperature_2m[index],
+            relative_humidity_2m: data.hourly.relative_humidity_2m[index],
+            wind_speed_10m: data.hourly.wind_speed_10m[index]
+        };
+    }
+
+    calculateError(observation, forecast) {
+        const tempErr = Math.abs(forecast.temperature_2m - observation.temperature_2m);
+        const humidityErr = Math.abs(
+            forecast.relative_humidity_2m - observation.relative_humidity_2m
+        );
+        const windErr = Math.abs(forecast.wind_speed_10m - observation.wind_speed_10m);
+
+        const normalized =
+            (tempErr / 15 + humidityErr / 40 + windErr / 10) / 3;
+
+        return {
+            tempErr,
+            humidityErr,
+            windErr,
+            composite: normalized * 100
+        };
+    }
+
+    rankModels(locationResults, models) {
+        const stats = new Map();
+
+        for (const model of models) {
+            stats.set(model.id, {
+                modelId: model.id,
+                modelLabel: model.label,
+                samples: 0,
+                totalComposite: 0,
+                totalTempErr: 0,
+                totalHumidityErr: 0,
+                totalWindErr: 0
+            });
+        }
+
+        for (const result of locationResults) {
+            for (const forecast of result.forecasts) {
+                const entry = stats.get(forecast.modelId);
+                if (!entry) continue;
+                entry.samples += 1;
+                entry.totalComposite += forecast.score.composite;
+                entry.totalTempErr += forecast.score.tempErr;
+                entry.totalHumidityErr += forecast.score.humidityErr;
+                entry.totalWindErr += forecast.score.windErr;
+            }
+        }
+
+        const ranked = [...stats.values()]
+            .filter((item) => item.samples > 0)
+            .map((item) => ({
+                ...item,
+                avgComposite: item.totalComposite / item.samples,
+                avgTempErr: item.totalTempErr / item.samples,
+                avgHumidityErr: item.totalHumidityErr / item.samples,
+                avgWindErr: item.totalWindErr / item.samples
+            }))
+            .sort((a, b) => a.avgComposite - b.avgComposite);
+
+        return ranked;
+    }
+
+    renderRanking(ranking, validLocationCount) {
+        if (!ranking.length) {
+            this.rankingWrap.innerHTML = '<p class="error-text">No model scores could be calculated.</p>';
+            return;
+        }
+
+        let html = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Model</th>
+                        <th>Composite Error</th>
+                        <th>Temp MAE (degC)</th>
+                        <th>Humidity MAE (%)</th>
+                        <th>Wind MAE (km/h)</th>
+                        <th>Samples</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        ranking.forEach((row, index) => {
+            const rankClass = index === 0 ? "rank-1" : "";
+            html += `
+                <tr>
+                    <td class="${rankClass}">#${index + 1}</td>
+                    <td>${row.modelLabel}</td>
+                    <td>${formatNum(row.avgComposite)}</td>
+                    <td>${formatNum(row.avgTempErr)}</td>
+                    <td>${formatNum(row.avgHumidityErr)}</td>
+                    <td>${formatNum(row.avgWindErr)}</td>
+                    <td>${row.samples}/${validLocationCount}</td>
+                </tr>
+            `;
+        });
+
+        html += "</tbody></table>";
+        this.rankingWrap.innerHTML = html;
+    }
+
+    renderDetails(locationResults, models) {
+        const modelOrder = models.map((m) => m.id);
+
+        const cards = locationResults.map((result) => {
+            const forecastsByModel = new Map(result.forecasts.map((f) => [f.modelId, f]));
+            let tableRows = "";
+
+            for (const modelId of modelOrder) {
+                const entry = forecastsByModel.get(modelId);
+                const modelInfo = models.find((m) => m.id === modelId);
+
+                if (!entry) {
+                    tableRows += `
+                        <tr>
+                            <td>${modelInfo ? modelInfo.label : modelId}</td>
+                            <td colspan="4" class="error-text">No forecast data</td>
+                        </tr>
+                    `;
+                    continue;
+                }
+
+                tableRows += `
+                    <tr>
+                        <td>${entry.modelLabel}</td>
+                        <td>${formatNum(entry.forecast.temperature_2m, 1)} (${formatNum(entry.score.tempErr, 1)})</td>
+                        <td>${formatNum(entry.forecast.relative_humidity_2m, 1)} (${formatNum(entry.score.humidityErr, 1)})</td>
+                        <td>${formatNum(entry.forecast.wind_speed_10m, 1)} (${formatNum(entry.score.windErr, 1)})</td>
+                        <td>${formatNum(entry.score.composite)}</td>
+                    </tr>
+                `;
+            }
+
+            return `
+                <div class="location-card">
+                    <h3>${result.location.name}</h3>
+                    <p class="meta">Observation at ${result.observation.time} UTC: ${formatNum(result.observation.temperature_2m, 1)} degC, ${formatNum(result.observation.relative_humidity_2m, 1)}%, ${formatNum(result.observation.wind_speed_10m, 1)} km/h</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Temp (err)</th>
+                                <th>Humidity (err)</th>
+                                <th>Wind (err)</th>
+                                <th>Composite</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+            `;
+        });
+
+        this.detailsWrap.innerHTML = cards.join("");
     }
 }
 
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new ComparisonApp();
+document.addEventListener("DOMContentLoaded", () => {
+    new ForecastComparator();
 });
