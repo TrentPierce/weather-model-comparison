@@ -4,6 +4,10 @@ A static web app that benchmarks free weather forecast models by comparing each 
 
 The app uses Open-Meteo APIs directly from the browser and ranks models by aggregate error.
 
+## Screenshot
+
+![Severe weather leaderboard screenshot](docs/severe-weather-leaderboard.png)
+
 ## What It Does
 
 1. Selects a random list of locations from a built-in pool.
